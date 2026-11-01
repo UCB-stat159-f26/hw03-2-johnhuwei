@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import pandas as pd
 
-from tennis_career.data import (_matches_to_frame, _opponent_age, _parse_matches)
+from tennis_career.data import (_add_player_age,_matches_to_frame, _opponent_age, _parse_matches)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -78,3 +78,24 @@ def test_matches_to_frame(filename, first_date, age_min, age_max):
     assert pd.api.types.is_datetime64_any_dtype(frame["date"])
     assert pd.api.types.is_numeric_dtype(frame["opponent_age"])
     assert frame["result"].isin(["W", "L"]).all()
+
+def test_add_player_age_and_difference():
+    matches = pd.DataFrame({
+        "date": pd.to_datetime(["2020-03-01", "2020-03-01"]),
+        "opponent_age": [18.0, 23.0],
+    })
+    original = matches.copy(deep=True)
+    result = _add_player_age(matches, "2000-03-01")
+    assert result["player_age"].tolist() == pytest.approx([20.0, 20.0])
+    assert result["age_difference"].tolist() == pytest.approx([2.0, -3.0])
+    pd.testing.assert_frame_equal(matches, original)
+
+
+@pytest.mark.parametrize("player_dob", ["2021-03-01", "NaT", "unknown"])
+def test_add_player_age_rejects_invalid_birth_date(player_dob):
+    matches = pd.DataFrame({
+        "date": pd.to_datetime(["2020-03-01"]),
+        "opponent_age": [18.0],
+    })
+    with pytest.raises(ValueError):
+        _add_player_age(matches, player_dob)

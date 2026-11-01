@@ -45,3 +45,13 @@ def _matches_to_frame(matches):
         for value, date in zip(frame["opponent_age"], frame["date"])
     ]
     return frame
+
+def _add_player_age(matches, player_dob):
+    """Add player age and age difference without changing the input."""
+    frame = matches.copy()
+    birth_date = pd.Timestamp(player_dob)
+    if pd.isna(birth_date) or (frame["date"] < birth_date).any():
+        raise ValueError("Player birth date must be valid and not after matches.")
+    frame["player_age"] = (frame["date"] - birth_date).dt.days / 365.25
+    frame["age_difference"] = frame["player_age"] - frame["opponent_age"]
+    return frame
