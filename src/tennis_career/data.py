@@ -26,3 +26,22 @@ def _opponent_age(age_value, match_date):
     if not 0 <= age < 120:
         raise ValueError("Opponent age must be between 0 and 120 years.")
     return age
+
+def _matches_to_frame(matches):
+    """Build a clean match table from parsed career records."""
+    fields = {
+        "date": 0,
+        "tournament": 1,
+        "surface": 2,
+        "result": 4,
+        "opponent": 11,
+        "opponent_age": 16,
+    }
+    rows = [{name: row[index] for name, index in fields.items()} for row in matches]
+    frame = pd.DataFrame(rows, columns=list(fields))
+    frame["date"] = pd.to_datetime(frame["date"], format="%Y%m%d", errors="raise")
+    frame["opponent_age"] = [
+        _opponent_age(value, date)
+        for value, date in zip(frame["opponent_age"], frame["date"])
+    ]
+    return frame

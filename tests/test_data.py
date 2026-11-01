@@ -3,8 +3,9 @@
 from pathlib import Path
 
 import pytest
+import pandas as pd
 
-from tennis_career.data import _opponent_age, _parse_matches
+from tennis_career.data import (_matches_to_frame, _opponent_age, _parse_matches)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -57,3 +58,23 @@ def test_opponent_age_rejects_invalid_values(age_value):
 def test_opponent_age_rejects_future_birth_date():
     with pytest.raises(ValueError, match="Opponent age"):
         _opponent_age("20210301", "2020-03-01")
+
+@pytest.mark.parametrize(
+    "filename, first_date, age_min, age_max",
+    [
+        ("FemalePlayerCareer.js", "1995-10-30", 18, 19),
+        ("MalePlayerCareer.js", "2001-09-10", 22, 23),
+    ],
+)
+def test_matches_to_frame(filename, first_date, age_min, age_max):
+    text = (FIXTURES / filename).read_text(encoding="utf-8")
+    frame = _matches_to_frame(_parse_matches(text))
+    assert frame.shape == (3, 6)
+    assert list(frame.columns) == [
+        "date", "tournament", "surface", "result", "opponent", "opponent_age"
+    ]
+    assert frame.loc[0, "date"] == pd.Timestamp(first_date)
+    assert age_min < frame.loc[0, "opponent_age"] < age_max
+    assert pd.api.types.is_datetime64_any_dtype(frame["date"])
+    assert pd.api.types.is_numeric_dtype(frame["opponent_age"])
+    assert frame["result"].isin(["W", "L"]).all()
