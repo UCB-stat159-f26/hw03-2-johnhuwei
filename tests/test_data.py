@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tennis_career.data import _parse_matches
+from tennis_career.data import _opponent_age, _parse_matches
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -38,3 +38,22 @@ def test_parse_matches_rejects_missing_array():
 def test_parse_matches_rejects_invalid_json():
     with pytest.raises(ValueError, match="not valid JSON"):
         _parse_matches("var morematchmx = [[")
+
+def test_opponent_age_from_birth_date():
+    age = _opponent_age("20000301", "2020-03-01")
+    assert age == pytest.approx(20.0)
+
+
+def test_opponent_age_from_numeric_age():
+    age = _opponent_age("22.264202601", "2001-09-10")
+    assert age == pytest.approx(22.264202601)
+
+@pytest.mark.parametrize("age_value", ["", "unknown", "-1", "nan", "inf"])
+def test_opponent_age_rejects_invalid_values(age_value):
+    with pytest.raises(ValueError):
+        _opponent_age(age_value, "2020-03-01")
+
+
+def test_opponent_age_rejects_future_birth_date():
+    with pytest.raises(ValueError, match="Opponent age"):
+        _opponent_age("20210301", "2020-03-01")
