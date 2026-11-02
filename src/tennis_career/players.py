@@ -1,6 +1,7 @@
 """Resolve player names and retrieve player information."""
 import json
 import re
+import pandas as pd
 
 def _normalize_name(player_name):
     """Normalize spacing and case for player name comparisons."""
@@ -33,3 +34,13 @@ def _resolve_player_name(player_name, directory_text):
     if len(matches) > 1:
         raise ValueError(f"Player name is ambiguous: {player_name!r}.")
     return matches[0]
+
+def _parse_player_dob(page_text):
+    """Extract and validate a player's birth date from page source."""
+    match = re.search(r"\bvar\s+dob\s*=\s*(\d{8})\s*;", page_text)
+    if match is None:
+        raise ValueError("Player page is missing a valid birth date.")
+    try:
+        return pd.to_datetime(match.group(1), format="%Y%m%d", errors="raise")
+    except ValueError as exc:
+        raise ValueError("Player page contains an invalid birth date.") from exc

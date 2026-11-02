@@ -1,8 +1,9 @@
 """Offline tests for player name handling."""
 
 import pytest
+import pandas as pd
 
-from tennis_career.players import (_normalize_name, _parse_player_names, _resolve_player_name)
+from tennis_career.players import (_normalize_name, _parse_player_names, _resolve_player_name, _parse_player_dob)
 
 
 @pytest.mark.parametrize(
@@ -59,3 +60,27 @@ def test_resolve_player_name_rejects_ambiguous_names():
     directory = 'var playerlist=["(M) Alex Smith", "(W) Alex Smith"];'
     with pytest.raises(ValueError, match="ambiguous"):
         _resolve_player_name("Alex Smith", directory)
+
+@pytest.mark.parametrize(
+    "page_text, expected",
+    [
+        ("var dob = 19810926;", "1981-09-26"),
+        ("var dob=19860603;", "1986-06-03"),
+    ],
+)
+def test_parse_player_dob(page_text, expected):
+    assert _parse_player_dob(page_text) == pd.Timestamp(expected)
+
+
+@pytest.mark.parametrize(
+    "page_text",
+    [
+        "var fullname = 'Unknown Player';",
+        "var dob = '';",
+        "var dob = 20001301;",
+        "var dob = 20000230;",
+    ],
+)
+def test_parse_player_dob_rejects_invalid_dates(page_text):
+    with pytest.raises(ValueError, match="birth date"):
+        _parse_player_dob(page_text)
