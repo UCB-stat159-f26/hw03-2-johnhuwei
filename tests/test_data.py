@@ -99,3 +99,13 @@ def test_add_player_age_rejects_invalid_birth_date(player_dob):
     })
     with pytest.raises(ValueError):
         _add_player_age(matches, player_dob)
+
+def test_parse_matches_reads_profile_array():
+    text = '<script>var matchmx=[["new match"]];</script>'
+    assert _parse_matches(text, "matchmx") == [["new match"]]
+
+
+def test_parse_matches_selects_requested_array():
+    text = 'var matchmx = [["recent"]]; var morematchmx = [["older"]];'
+    assert _parse_matches(text, "matchmx") == [["recent"]]
+    assert _parse_matches(text) == [["older"]]

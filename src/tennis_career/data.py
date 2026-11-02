@@ -2,13 +2,15 @@
 
 import json
 import pandas as pd
+import re
 
-def _parse_matches(js_text):
-    """Extract match records from career JavaScript text."""
-    marker = "var morematchmx ="
-    if marker not in js_text:
+def _parse_matches(js_text, array_name="morematchmx"):
+    """Extract a named match array without executing JavaScript."""
+    pattern = rf"\bvar\s+{re.escape(array_name)}\s*=\s*"
+    match = re.search(pattern, js_text)
+    if match is None:
         raise ValueError("Career data is missing the match array.")
-    array_text = js_text.split(marker, 1)[1].lstrip()
+    array_text = js_text[match.end():]
     try:
         matches, _ = json.JSONDecoder().raw_decode(array_text)
     except json.JSONDecodeError as exc:

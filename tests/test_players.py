@@ -3,7 +3,8 @@
 import pytest
 import pandas as pd
 
-from tennis_career.players import (_normalize_name, _parse_player_names, _resolve_player_name, _parse_player_dob)
+from tennis_career.players import (_normalize_name, _parse_player_names, _resolve_player_name, _parse_player_dob, _needs_career_file,
+    _player_source_path)
 
 
 @pytest.mark.parametrize(
@@ -84,3 +85,34 @@ def test_parse_player_dob(page_text, expected):
 def test_parse_player_dob_rejects_invalid_dates(page_text):
     with pytest.raises(ValueError, match="birth date"):
         _parse_player_dob(page_text)
+
+def test_parse_player_names_can_preserve_tour_markers():
+    assert _parse_player_names(DIRECTORY, keep_prefix=True) == [
+        "(W) Serena Williams", "(M) Rafael Nadal"
+    ]
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("Serena Williams", "jsmatches"),
+        ("Rafael Nadal", "cgi-bin/player-classic.cgi"),
+    ],
+)
+def test_player_source_path(name, expected):
+    assert _player_source_path(name, DIRECTORY) == expected
+
+
+def test_player_source_path_rejects_unknown_tour():
+    with pytest.raises(ValueError, match="tour marker"):
+        _player_source_path("Unknown Player", DIRECTORY)
+
+
+@pytest.mark.parametrize("flag, expected", [("0", False), ("1", True)])
+def test_needs_career_file(flag, expected):
+    assert _needs_career_file(f"var careerjs={flag};") is expected
+
+
+def test_needs_career_file_rejects_missing_flag():
+    with pytest.raises(ValueError, match="career-data flag"):
+        _needs_career_file("var matchmx = [];")

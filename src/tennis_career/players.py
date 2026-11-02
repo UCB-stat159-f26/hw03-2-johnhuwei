@@ -12,7 +12,7 @@ def _normalize_name(player_name):
         raise ValueError("Player name must be a non-empty string.")
     return normalized
 
-def _parse_player_names(js_text):
+def _parse_player_names(js_text, keep_prefix=False):
     """Extract player names from the site's JavaScript list."""
     match = re.search(r"var\s+playerlist\s*=\s*", js_text)
     if match is None:
@@ -21,6 +21,8 @@ def _parse_player_names(js_text):
         entries, _ = json.JSONDecoder().raw_decode(js_text[match.end():])
     except json.JSONDecodeError as exc:
         raise ValueError("Player directory contains invalid JSON.") from exc
+    if keep_prefix:
+        return entries
     return [re.sub(r"^\([MW]\)\s*", "", entry) for entry in entries]
 
 
@@ -44,3 +46,20 @@ def _parse_player_dob(page_text):
         return pd.to_datetime(match.group(1), format="%Y%m%d", errors="raise")
     except ValueError as exc:
         raise ValueError("Player page contains an invalid birth date.") from exc
+
+def _player_source_path(official_name, directory_text):
+    """Choose the match-data source using the directory's tour marker."""
+    entries = _parse_player_names(directory_text, keep_prefix=True)
+    if f"(W) {official_name}" in entries:
+        return "jsmatches"
+    if f"(M) {official_name}" in entries:
+        return "cgi-bin/player-classic.cgi"
+    raise ValueError("Player is missing a recognized tour marker.")
+
+
+def _needs_career_file(source_text):
+    """Read whether the source requires an additional career file."""
+    match = re.search(r"\bvar\s+careerjs\s*=\s*([01])\s*;", source_text)
+    if match is None:
+        raise ValueError("Player source is missing the career-data flag.")
+    return match.group(1) == "1"
