@@ -102,6 +102,8 @@ From the repository root, with development dependencies installed:
 python -m pytest -q
 ```
 
-Automated tests use local fixtures and mocked downloads without contacting live servers. They cover parsing, age calculations, name matching, download errors, historical-data merging, and plotting.
+## Personal Reflections
 
-Real-player downloads and plot inspection are performed separately as manual checks.
+This assignment helped me understand the difference between writing scripts and building a reusable Python package. In HW2, I ran separate scripts to download, clean, and plot data. In HW3, I organized those steps into smaller helper functions behind two public functions. I also learned how `pyproject.toml` specifies package information and dependencies. Encountering a Python version mismatch showed me why installation requirements need to match the environment.
+
+The most memorable problem was discovering that the old Rafael Nadal career file only contained matches through 2016. The code ran, the automated tests passed, and a plot appeared, but the data was incomplete. Checking the date range revealed the problem. I updated the data sources and added tests for combining current and historical records. This taught me that passing tests does not guarantee complete source data, especially when tests use small simulated examples. I also learned to check field meanings carefully: the same field can contain an opponent's birth date or a numeric age.
